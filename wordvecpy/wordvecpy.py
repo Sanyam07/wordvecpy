@@ -318,6 +318,35 @@ class VectorEmbeddedDoc:
 class Vectokenizer:
 
     def __init__(self, corpus, vector_dict, test_corpus = None, max_words = None, max_sentence_length = None, tokenize_unknown = False, name  = None, verbose = False):
+        '''
+        :param corpus: The text input to be processed.  Can be either a TextProcessor object, list of sentences as lists,
+            or np array of sentences as lists.
+        :param vector_dict:  The vector dictionary to query the pretrained embeddings.  Can be a VectorDictionary object
+            or a pymagnitude object
+        :param test_corpus:  The test data.  Can be either a TextProcessor object, list of sentences as lists, or np array
+            of sentences as lists.
+        :param max_words:   The maximum number of words to use for embedding.  All words are ranked by how commmon they are
+            and the top max_words words will be used.  If None, use all words.
+        :param max_sentence_length:  The maximum sentence length.  Cut off sentences longer than this length.  If None
+            use the length of the largest 'sentence' in the corpus
+        :param tokenize_unknown:  If False, make all out of dictionary (ie out of range of maximum word count) words
+            equal to empty space.  If True, will substitute 'UNKNOWN' for any out-of-dictionary words.  Vector representation
+            in the word vector dictionary will be the mean of all out-of-dictionary words in the corpus.
+        :param name:   String name of this vectokenizer.  Used with the VectorEmbeddedDoc class for saving slices of complete
+            word vector embeddings that are too large to store in memory at one time.
+        :param verbose:  True or False.  If True, show progress of various load and generation processes.  If False, show
+            nothing.
+
+        ******************
+
+        :var vector_dim:  The size of each word vector
+        :var ranked_word_list:  List of words ranked from most used to least used, cut off so that size of list equals
+            max_words
+        :var max_sentence_length:  Length of the longest 'sentence' in corpus if no max_sentence_length is forced when
+            creating object
+        :var oov_vector:  The mean of the vectors for all out-of-dictionary words (ie, words transformed to 'UNKNOWN' if
+            tokenize_unknown == True.
+        '''
 
         import numpy as np
         self.np = np
@@ -396,9 +425,17 @@ class Vectokenizer:
             if key not in self.ranked_word_list: del self.freq_dict[key]
 
     def tokenized_word_index(self):
+        '''
+        :return: word vector dictionary for the corpus
+        '''
         return {word:self.integer_token_lookup(word) for word in self.ranked_word_list}
 
     def fit_vector_dict(self, verbose = None):
+        '''
+        Generate word vector dictionary for all words on ranked word list and for out-of-dictionary word if
+            tokenize_unknown == True.
+        :return: dictionary mapping all words in ranked word list to it's vector representation
+        '''
         if type(verbose)!= bool:
             verbose = self.verbose
         if verbose == True:
@@ -407,6 +444,10 @@ class Vectokenizer:
         return vector_dict
 
     def fit_integer_embedding(self, verbose = None, pad_first = True):
+        '''
+        Fits all 'sentences' in corpus to their integer representation
+        :return: all padded 'sentences' of corpus in integer embedded form
+        '''
         if verbose == None:
             verbose = self.verbose
         integer_embedding = self.np.zeros((len(self.corpus), self.longest_sentence), dtype=int)
@@ -420,12 +461,33 @@ class Vectokenizer:
         return integer_embedding
 
     def __query_str(self, word):
+        '''
+        Internal function to query and individual word
+        :param word:
+        :return:
+        '''
         if word == 'UNKNOWN':
             return self.avg_missing_vector
         else:
             return self.vectors.query(str(word))
 
     def query(self, word_list, restrict_search = False, initial_zero = False, verbose = False):
+        '''
+        Generalization of _query_str.  If string is given, return __query_str.  If list is given, return list of
+            __query_str for each word in list.
+        :param word_list: Word or list of words to search
+        :param restrict_search: If True, only return words in ranked word list
+        :param initial_zero: set to True only if generating entire vector dictionary from ranked word list
+        :param verbose: show progress
+        :return: return vector representation or list of vector representations for word or words
+        '''
+        if type(word_list)==str:
+            if restrict_search and word_list in self.ranked_word_list:
+                return __query_str(word_list)
+            elif restrict_search:
+                return np.zeros(self.vector_dim)
+            else:
+                return __query_str(word_list)
         if initial_zero == False:
             query_embedding = self.np.zeros((len(word_list), self.vector_dim))
             i_z = 0
@@ -448,6 +510,13 @@ class Vectokenizer:
             return query_embedding
 
     def str_to_int_tokens(self, word_list, max_length = None, pad_first = True):
+        '''
+        Converts a list of words into it's integer embedding form
+        :param word_list: words to convert
+        :param max_length: maximum number of words to convert
+        :param pad_first: if True, pad sentences from the beginning of embedding.  If false, add zeros after sentence embedding
+        :return: return list of integer representations of the input list of words
+        '''
         if not max_length:
             max_length = len(word_list)
         if not pad_first:
@@ -456,6 +525,11 @@ class Vectokenizer:
             return self.np.concatenate([self.np.zeros(max_length - len(word_list), dtype = int), [self.integer_token_lookup(x) for x in word_list]])
 
     def integer_token_lookup(self, str_token):
+        '''
+        Look up integer representation of word
+        :param str_token: word to look up
+        :return: integer representation of word
+        '''
         try:
             return self.ranked_word_list.tolist().index(str_token)
         except:
@@ -465,12 +539,24 @@ class Vectokenizer:
                 return self.max_words + 2
 
     def to_keras(self, pad_first = True):
+        '''
+        Output integer embedding and linked word vector dictionary in format suitable to use in a Keras mode.  The
+            model will be trained on the integer embedding of the corpus and the word vector dictionary will be imported as
+            weights of the Keras embedding layer
+        :return: if text corpus input, returns a 3-tuple of (corpus integer embeddings, test corpus integer embeddings,
+            word vector dictionary).  If no test corpus, returns a 2-tuple of (corpus integer embeddings, word vector dictionary)
+        '''
         if not self.test_corpus:
             return self.fit_integer_embedding(pad_first = pad_first), self.fit_vector_dict()
         else:
             return self.fit_integer_embedding(pad_first = pad_first), self.test_to_integer_embedding(pad_first = pad_first), self.fit_vector_dict()
 
     def test_to_integer_embedding(self, pad_first = True):
+        '''
+        Same as fit_integer_embedding, but converts the test corpus to integer representation.  Test corpus is only
+            converted for words in the corpus integer embedding dictionary
+        :return: all padded 'sentences' of test corpus in integer embedded form
+        '''
         if not self.test_corpus:
             raise ValueError('Vectokenizer has no test corpus input.')
         transformed_corpus = self.np.zeros((len(self.test_corpus), self.longest_sentence), dtype = int)
@@ -481,26 +567,30 @@ class Vectokenizer:
 
 class TextProcessor:
 
-    def __init__(self, corpus, lemmatizer = 'default', stopwords = {}, punctuation = '', contractions = {}, substitutions = {}, combined_strings = False):
-        ''''
-
-        stopwords:      {SET} a simple set of words to remove
-
-        punctuation:    (SET) a set of punctuation to remove
-
-        contractions:   (DICT) a dictionary of contractions to make.  Example is {"can't": "can not", "n't": not, ...}
-
-        substitution:   {DICT}  Like contractions but for grouping words together.  Example {'i': 'me', 'my': 'me', etc.}
+    def __init__(self, corpus, lemmatizer = 'nltk', stopwords = {}, punctuation = '', contractions = {}, substitutions = {}):
         '''
-
-        from nltk.corpus import wordnet
+        :param corpus:  list of sentences to process
+        :param lemmatizer:  Function to lemmatize words.  If None, no lemmatizer used.  If 'nltk', uses nltk WordNetLemmatizer.
+            if 'spaCy en', uses the spaCy English lemmatizer.  If anything else, treats as function mapping a word to it's
+            lemmatized form.
+        :param stopwords: a simple set of words to remove
+        :param punctuation: a set of punctuation to remove
+        :param contractions: a dictionary of contractions to make.  Example is {"can't": "can not", "n't": not, ...}
+        :param substitution:   similar to contractions but for grouping words together.  Example {'i': 'me', 'my': 'me', etc.}
+        '''
 
         self.corpus = corpus
 
-        if lemmatizer == 'default':
+        if lemmatizer == 'nltk':
             from nltk import WordNetLemmatizer
             self.lemmatizer = WordNetLemmatizer()
-            self.default_lem = True
+            self.default_lem = 'nltk'
+            from nltk.corpus import wordnet
+            self.wordnet = wordnet
+        elif lemmatizer == 'spaCy en':
+            self.spacy = spacy.load('en', disable=['parser', 'ner'])
+            self.lemmatizer = self.identity
+            self.default_lem = 'spaCy'
         elif not lemmatizer:
             self.default_lem = False
             self.lemmatizer = self.identity
@@ -523,7 +613,7 @@ class TextProcessor:
               'can', 'did', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where',
               'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 'being',
               'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was',
-              'here', 'than'}
+              'here', 'than', 'pron'}
         else:
             self.stopwords = stopwords
 
@@ -538,15 +628,18 @@ class TextProcessor:
         else:
             self.punctuation = punctuation
 
-        self.POS = [wordnet.ADJ, wordnet.VERB, wordnet.NOUN, wordnet.ADV]
-
     def identity(self, word):
         return word
 
     def lemmatize(self, word):
-
-        if self.default_lem:
-            im_just_guessing_here = [self.lemmatizer.lemmatize(word, x) for x in self.POS]
+        '''
+        Lemmatizes a word based on the given lemmatizer
+        :param word: Word to lemmatize
+        :return: Lemmatized word
+        '''
+        if self.default_lem == 'nltk':
+            POS = [self.wordnet.ADJ, self.wordnet.VERB, self.wordnet.NOUN, self.wordnet.ADV]
+            im_just_guessing_here = [self.lemmatizer.lemmatize(word, x) for x in POS]
 
             lemmatized_word = max(set(im_just_guessing_here),
                                   key=im_just_guessing_here.count)
@@ -555,15 +648,37 @@ class TextProcessor:
 
         return lemmatized_word
 
-    def transform(self, combined_strings = False):
-        if not combined_strings:
-            return [self.filter(x.split()) for x in self.corpus]
+    def transform(self, combined_strings = False, verbose = False):
+        '''
+        Processes entire corpus in accordance with rules defined when instantiating object
+        :param combined_strings: If False, return sentences split into words in a list.  If true, returns complete
+            sentences as strings
+        :param verbose: True to get updated on progress of transformation
+        :return:
+        '''
+        if verbose:
+            if not combined_strings and self.default_lem!='spaCy':
+                return [self.filter(x) for x in tqdm.tqdm(self.corpus)]
+            else:
+                return [' '.join(self.filter(x)) for x in tqdm.tqdm(self.corpus)]
+        elif not combined_strings:
+            return [self.filter(x) for x in self.corpus]
         else:
-            return [' '.join(self.filter(x.split())) for x in self.corpus]
+            return [' '.join(self.filter(x)) for x in self.corpus]
 
     def filter(self, input_string, return_list = True):
+        '''
+        Applies all defined rules to a given sentence
+        :param input_string: Sentence to process
+        :param return_list: If True, return as list of words.  If false, return as string
+        :return: Processed string
+        '''
         from re import sub
         new_list = []
+
+        if self.default_lem == 'spaCy':
+            spacy_string = self.spacy(input_string)
+            input_string = [x.lemma_ for x in spacy_string]
 
         if type(input_string) == str:
             input_string = input_string.lower()
@@ -584,7 +699,9 @@ class TextProcessor:
                     s = s.replace(key, self.substitutions[key])
                 s = sub('[' + self.punctuation + ']', '', s)
                 for i in s.split():
-                    pro_text.append(i)
+                    i=i.replace(' ', '')
+                    if i:
+                        pro_text.append(i)
 
         for u in pro_text:
             if not (u in self.stopwords):
@@ -598,6 +715,35 @@ class TextProcessor:
 class FastVectokenizer:
 
     def __init__(self, corpus, vector_dict, test_corpus = None, max_words = None, max_sentence_length = None, tokenize_unknown = False, name = None):
+        '''
+        :param corpus: The text input to be processed.  Can be either a TextProcessor object, list of sentences as lists,
+            or np array of sentences as lists.
+        :param vector_dict:  The vector dictionary to query the pretrained embeddings.  Can be a VectorDictionary object
+            or a pymagnitude object
+        :param test_corpus:  The test data.  Can be either a TextProcessor object, list of sentences as lists, or np array
+            of sentences as lists.
+        :param max_words:   The maximum number of words to use for embedding.  All words are ranked by how commmon they are
+            and the top max_words words will be used.  If None, use all words.
+        :param max_sentence_length:  The maximum sentence length.  Cut off sentences longer than this length.  If None
+            use the length of the largest 'sentence' in the corpus
+        :param tokenize_unknown:  If False, make all out of dictionary (ie out of range of maximum word count) words
+            equal to empty space.  If True, will substitute 'UNKNOWN' for any out-of-dictionary words.  Vector representation
+            in the word vector dictionary will be the mean of all out-of-dictionary words in the corpus.
+        :param name:   String name of this vectokenizer.  Used with the VectorEmbeddedDoc class for saving slices of complete
+            word vector embeddings that are too large to store in memory at one time.
+        :param verbose:  True or False.  If True, show progress of various load and generation processes.  If False, show
+            nothing.
+
+        ******************
+
+        :var vector_dim:  The size of each word vector
+        :var ranked_word_list:  List of words ranked from most used to least used, cut off so that size of list equals
+            max_words
+        :var max_sentence_length:  Length of the longest 'sentence' in corpus if no max_sentence_length is forced when
+            creating object
+        :var oov_vector:  The mean of the vectors for all out-of-dictionary words (ie, words transformed to 'UNKNOWN' if
+            tokenize_unknown == True.
+        '''
         try:
             from keras.preprocessing.text import Tokenizer
             from keras.preprocessing.sequence import pad_sequences
@@ -661,22 +807,39 @@ class FastVectokenizer:
             for key in self.toke.word_index:
                 if key not in self.ranked_word_list:
                     self.lost_words.add(key)
-            self.oov_vec = np.average([self.query(word) for word in self.lost_words], axis = 0)
+            self.oov_vec = np.average([self.query(word) for word in self.lost_words], axis=0)
 
 
 
     def tokenized_word_index(self):
+        '''
+        :return: word vector dictionary for the corpus
+        '''
         return self.toke.word_index
 
     def fit_integer_embedding(self):
+        '''
+        Fits all 'sentences' in corpus to their integer representation
+        :return: all padded 'sentences' of corpus in integer embedded form
+        '''
         seqs = self.toke.texts_to_sequences(self.corpus)
         return self.pad_sequences(seqs, maxlen = self.max_sentence_length)
 
     def test_to_integer_embedding(self):
+        '''
+        Same as fit_integer_embedding, but converts the test corpus to integer representation.  Test corpus is only
+            converted for words in the corpus integer embedding dictionary
+        :return: all padded 'sentences' of test corpus in integer embedded form
+        '''
         seqs = self.toke.text_to_sequences(self.test_corpus)
         return self.pad_sequences(seqs, maxlen = self.max_sentence_length)
 
     def fit_vector_dict(self):
+        '''
+        Generate word vector dictionary for all words on ranked word list and for out-of-dictionary word if
+            tokenize_unknown == True.
+        :return: dictionary mapping all words in ranked word list to it's vector representation
+        '''
         dict_size = len(self.ranked_word_list[1:self.max_words])
         vect_dict = self.np.zeros((dict_size+1, self.vector_dim))
         for i in range(1, dict_size):
@@ -684,12 +847,27 @@ class FastVectokenizer:
         return vect_dict
 
     def to_keras(self):
-        if self.test_corpus != None:
+        '''
+        Output integer embedding and linked word vector dictionary in format suitable to use in a Keras mode.  The
+            model will be trained on the integer embedding of the corpus and the word vector dictionary will be imported as
+            weights of the Keras embedding layer
+        :return: if text corpus input, returns a 3-tuple of (corpus integer embeddings, test corpus integer embeddings,
+            word vector dictionary).  If no test corpus, returns a 2-tuple of (corpus integer embeddings, word vector dictionary)
+        '''
+        if not self.test_corpus:
             return self.fit_integer_embedding(), self.test_to_integer_embedding(), self.fit_vector_dict()
         else:
             return self.fit_integer_embedding(), self.fit_vector_dict()
 
     def query(self, word, restrict_search = False):
+        '''
+        Look up word vector representation of a word
+        :param word: word to return vector representation of
+        :param restrict_search: if True, only return for words in ranked word list.  Default to False as one of the major
+            benefits of using pretrained words is that you can reference them for words in the test set that are not in the
+            training set
+        :return: word vector representation of 'word'
+        '''
         if self.tokenize_unknown and (word == 'UNKNOWN'):
             return self.oov_vec
         elif restrict_search and (word in self.ranked_word_list[1:]):
@@ -700,14 +878,28 @@ class FastVectokenizer:
             return self.np.zeros(self.vector_dim)
 
 class VectorDictionary:
-
+    '''
+    Creates searchable dictionary of all word/vector pairs in given .txt file.  Designed to allow GLoVe embeddings
+    without using pymagnitude library
+    '''
     def __init__(self):
-
+        '''
+        :var vector_dict:  dictionary of all word/vector pairs in input .txt file
+        :var vector_dim:  size of vector representations
+        :var size:  number of words total in dictionary
+        '''
         self.vector_dict = {}
-        self.vector_dims = 0
+        self.vector_dim = 0
         self.size = 0
 
     def load_dict(self, file_dir, encoding = "utf8", verbose = False):
+        '''
+        Loads in all word/vector pairs from .txt file
+        :param file_dir: directory of .txt file
+        :param encoding: encoding of .txt file
+        :param verbose: if True, reports progress of loading dictionary
+        :return: Nothing.  Update internal variables
+        '''
         if verbose:
             import tqdm
 
@@ -725,9 +917,15 @@ class VectorDictionary:
                 self.vector_dict[components[0]] = [float(x) for x in components[1:]]
 
         self.size = len(self.vector_dict)
-        self.vector_dims = len(self.vector_dict['test'])
+        self.vector_dim = len(self.vector_dict['test'])
 
     def query(self, word, return_empty = None):
+        '''
+        Search word/vector pairs for vector representation of specific word
+        :param word: word to find vector representation of
+        :param return_empty: vector to return if word not found in dictionary.  If None, returns the 0-vector
+        :return: vector representation of input word
+        '''
         try:
             return self.vector_dict[word]
         except:

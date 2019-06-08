@@ -14,7 +14,7 @@ setup(
     author='Shane Stephenson',
     author_email='stephenson.shane.a@gmail.com', 
     packages=find_packages(),
-    install_requires = ['numpy', 'pymagnitude', 'tqdm'],
+    install_requires = ['numpy', 'tqdm'],
     version='v0.1',
     license="All yours bro",
     description='Package for working with word vector embeddings',
