@@ -23,7 +23,8 @@ pip install wordvecpy
 
 
 ## Future Plans
-In the future I will build support for just generating a word vector lookup dictionary for all (or some specified number of) words in the corpus.  Additionally, plan to use this dictionary to generate matrix embeddings in the format Keras uses to load weights into an embedding layer.
+
+Currently working on functionality to reduce the size of integer embeddings by clustering words based on their vector representations.  This will hopefully allow smaller vector dictionaries to be used while maintaining good functionality.
 
 ## License
 None brah
