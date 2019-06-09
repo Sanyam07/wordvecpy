@@ -1,4 +1,4 @@
-# MassiveWordVec
+# Word Vector Embedding Package
 
 **wordvecpy** is a library for processing text data, tokenizing it, and building word vector dictionaries and whole word vector embeddings from the corpus text.
 
