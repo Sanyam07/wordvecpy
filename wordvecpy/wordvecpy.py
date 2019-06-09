@@ -762,11 +762,12 @@ class FastVectokenizer:
         self.tokenize_unknown = tokenize_unknown
 
         if test_corpus != None:
-            self.test_size = len(self.test_corpus)
             try:
-                self.test_corpus = self.test_corpus.transform()
+                self.test_corpus = test_corpus.transform()
+                self.test_size = len(test_corpus)
             except:
                 self.test_corpus = test_corpus
+                self.test_size = len(test_corpus)
         else:
             self.test_corpus = None
             self.test_size = 0

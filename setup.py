@@ -15,10 +15,10 @@ setup(
     author_email='stephenson.shane.a@gmail.com', 
     packages=find_packages(),
     install_requires = ['numpy', 'tqdm'],
-    version='v0.3',
+    version='v0.4',
     license="All yours bro",
     description='Package for working with word vector embeddings',
     long_description_content_type='text/markdown',
     long_description=open('README.md', 'r').read(),
-    download_url = 'https://github.com/metriczulu/wordvecpy/archive/v0.3.tar.gz'
+    download_url = 'https://github.com/metriczulu/wordvecpy/archive/v0.4.tar.gz'
 )
