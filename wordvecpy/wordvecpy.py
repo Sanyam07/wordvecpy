@@ -834,7 +834,7 @@ class FastVectokenizer:
             converted for words in the corpus integer embedding dictionary
         :return: all padded 'sentences' of test corpus in integer embedded form
         '''
-        seqs = self.toke.text_to_sequences(self.test_corpus)
+        seqs = self.toke.texts_to_sequences(self.test_corpus)
         return self.pad_sequences(seqs, maxlen = self.max_sentence_length)
 
     def fit_vector_dict(self):
@@ -857,7 +857,7 @@ class FastVectokenizer:
         :return: if text corpus input, returns a 3-tuple of (corpus integer embeddings, test corpus integer embeddings,
             word vector dictionary).  If no test corpus, returns a 2-tuple of (corpus integer embeddings, word vector dictionary)
         '''
-        if not self.test_corpus:
+        if self.test_size > 0:
             return self.fit_integer_embedding(), self.test_to_integer_embedding(), self.fit_vector_dict()
         else:
             return self.fit_integer_embedding(), self.fit_vector_dict()
