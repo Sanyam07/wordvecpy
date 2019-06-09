@@ -588,6 +588,7 @@ class TextProcessor:
             from nltk.corpus import wordnet
             self.wordnet = wordnet
         elif lemmatizer == 'spaCy en':
+            import spacy
             self.spacy = spacy.load('en', disable=['parser', 'ner'])
             self.lemmatizer = self.identity
             self.default_lem = 'spaCy'
@@ -657,6 +658,7 @@ class TextProcessor:
         :return:
         '''
         if verbose:
+            import tqdm
             if not combined_strings and self.default_lem!='spaCy':
                 return [self.filter(x) for x in tqdm.tqdm(self.corpus)]
             else:
@@ -704,7 +706,7 @@ class TextProcessor:
                         pro_text.append(i)
 
         for u in pro_text:
-            if not (u in self.stopwords):
+            if (not (u in self.stopwords)) and (not self.lemmatize(u).isspace()) and (self.lemmatize(u)):
                 new_list.append(self.lemmatize(u))
 
         if return_list:
