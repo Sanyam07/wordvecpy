@@ -1,4 +1,4 @@
 
-from wordvecpy.wordvecpy import TextProcessor, Vectokenizer, VectorEmbeddedDoc, LoadVectorEmbeddedDoc, FastVectokenizer
-from wordvecpy.wordvecpy import VectorDictionary
+from wordvecpy.wordvecpy import TextProcessor, Vectokenizer, EmbeddedCorpus, LoadEmbeddedCorpus, FastVectokenizer
+from wordvecpy.wordvecpy import VectorDictionary, ELMOEmbeddedCorpus
 

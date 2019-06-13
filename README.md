@@ -8,9 +8,11 @@
 
 **Vectokenizer** and **FastVectokenizer** both convert processed text corpus into integer embeddings and create vector dictionaries for those associated integer embeddings.  Both classes do the exact same thing but FastVectokenizer requires Keras to create integer embeddings and Vectokenizer does not.
 
-**VectorEmbeddedDoc** and **LoadVectorEmbeddedDoc** generate (and save, if needed) and load complete word vector embeddings.  As these can take up a huge amount of memory quickly, it is capable of splitting and saving in slices of data.  This is most useful for using word vector embeddings in raw form.
+**EmbeddedCorpus** and **LoadEmbeddedCorpus** generate (and save, if needed) and load complete word vector embeddings.  As these can take up a huge amount of memory quickly, it is capable of splitting and saving in slices of data.  This is most useful for using word vector embeddings in raw form.
 
+**ELMOEmbeddedCorpus** does the exact same thing as **EmbeddedCorpus**, however, only for ELMO vectors.  Due to embeddings being different depending on the sentence for ELMO embeddings, the method for converting these had to be changed.  Embeddings are still loaded with **LoadEmbeddedCorpus**.  **ELMOEmbeddedCorpus** is currently only available using **pymagnitude** to access ELMO embeddings.
 
+Current version is 0.6.
 ## Installation
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install wordvecpy.
@@ -28,4 +30,5 @@ Currently working on functionality to reduce the size of integer embeddings by c
 
 ## License
 None brah
+
 # wordvecpy
