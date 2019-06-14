@@ -31,13 +31,15 @@ class ELMOEmbeddedCorpus:
             self.current_label_chunk = self.labels[self.current_chunk_index*self.split_dist:(self.current_chunk_index+1)*self.split_dist]
 
     def fit_doc(self, doc):
-
+        import numpy as np
         embedding = np.zeros((self.max_length, self.vectors.dim))
         doc_length = len(doc)
         embedding[:doc_length]=self.vectors.query(doc)
         return embedding
 
     def fit_chunk(self, verbose = True):
+        import numpy as np
+
         embedding = np.zeros((self.split_dist, self.max_length, self.vectors.dim))
         if verbose:
             import tqdm
