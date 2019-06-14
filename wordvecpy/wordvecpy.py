@@ -2,6 +2,7 @@ class ELMOEmbeddedCorpus:
 
     def __init__(self, corpus, name, magnitude_file, labels=None, max_length=None, num_chunks=1, file_directory='./'):
 
+        import numpy as np
         # If input corpus is a TextProcessor object, transform it.  Else, treat as already processed
         try:
             self.corpus = corpus.transform()
