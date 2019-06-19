@@ -11,14 +11,14 @@ setup(
 
     name='wordvecpy',
     url='https://github.com/metriczulu/wordvecpy',
-    author='Shane Stephenson',
+    author='Shane Stephenson / metriczulu',
     author_email='stephenson.shane.a@gmail.com', 
     packages=find_packages(),
     install_requires = ['numpy', 'tqdm'],
-    version='v0.71',
+    version='v1.0',
     license="All yours bro",
     description='Package for working with word vector embeddings',
     long_description_content_type='text/markdown',
     long_description=open('README.md', 'r').read(),
-    download_url = 'https://github.com/metriczulu/wordvecpy/archive/v0.71.tar.gz'
+    download_url = 'https://github.com/metriczulu/wordvecpy/archive/v1.0.tar.gz'
 )
