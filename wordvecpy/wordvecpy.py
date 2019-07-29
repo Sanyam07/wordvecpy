@@ -1,228 +1,9 @@
-class TextProcessor:
-
-    def __init__(self, lemmatizer = 'nltk', stopwords = 'default', punctuation = 'default', contractions = 'default', substitutions = 'default'):
-        '''
-        :param corpus:  list of sentences to process
-        :param lemmatizer:  Function to lemmatize words.  If None, no lemmatizer used.  If 'nltk', uses nltk WordNetLemmatizer.
-            if 'spaCy en', uses the spaCy English lemmatizer.  If anything else, treats as function mapping a word to it's
-            lemmatized form.
-        :param stopwords: a simple set of words to remove
-        :param punctuation: a set of punctuation to remove
-        :param contractions: a dictionary of contractions to make.  Example is {"can't": "can not", "n't": not, ...}
-        :param substitution:   similar to contractions but for grouping words together.  Example {'i': 'me', 'my': 'me', etc.}
-        '''
-
-        if lemmatizer == 'nltk':
-            from nltk import WordNetLemmatizer
-            self.lemmatizer = WordNetLemmatizer()
-            self.default_lem = 'nltk'
-            from nltk.corpus import wordnet
-            self.wordnet = wordnet
-        elif lemmatizer == 'spaCy en':
-            import spacy
-            self.spacy = spacy.load('en', disable=['parser', 'ner'])
-            self.lemmatizer = self.identity
-            self.default_lem = 'spaCy'
-        elif not lemmatizer:
-            self.default_lem = False
-            self.lemmatizer = self.identity
-        else:
-            self.default_lem = False
-            self.lemmatizer = lemmatizer
-
-        if substitutions == 'default':
-            self.substitutions = {}
-        else:
-            self.substitutions = substitutions
-
-        if stopwords == 'default':
-            self.stopwords = {'ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about',
-              'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be',
-              'some', 'for', 'do', 'its', 'your', 'such', 'into', 'of', 'most', 'itself',
-              'other', 'off', 'is', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the',
-              'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through',
-              'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our',
-              'their', 'while', 'above', 'both', 'up', 'to', 'had', 'she',
-              'when', 'at', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will',
-              'on', 'does', 'yourselve', 'then', 'that', 'because', 'what', 'over', 'why', 'so',
-              'can', 'did', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where',
-              'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 'being',
-              'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was',
-              'here', 'than', 'pron'}
-        elif stopwords == 'none':
-            self.stopwords = {}
-        else:
-            self.stopwords = stopwords
-
-        if contractions == 'default':
-            self.contractions = {"can't": "can not", "won't": "will not", "n't": " not",
-             "'ve": " have", "'m": " am", "'s": "", "'d": " had", '-': ' '}
-        elif contractions == 'none':
-            self.contracts = {}
-        else:
-            self.contractions = contractions
-
-        if punctuation == 'default':
-            self.punctuation = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-        elif punctuation == 'none':
-            self.punctuation = ''
-        else:
-            self.punctuation = punctuation
-
-    def identity(self, word):
-        return word
-
-    def lemmatize(self, word):
-        '''
-        Lemmatizes a word based on the given lemmatizer
-        :param word: Word to lemmatize
-        :return: Lemmatized word
-        '''
-        if self.default_lem == 'nltk':
-            POS = [self.wordnet.ADJ, self.wordnet.VERB, self.wordnet.NOUN, self.wordnet.ADV]
-            im_just_guessing_here = [self.lemmatizer.lemmatize(word, x) for x in POS]
-
-            lemmatized_word = max(set(im_just_guessing_here),
-                                  key=im_just_guessing_here.count)
-        else:
-            lemmatized_word = self.lemmatizer(word)
-
-        return lemmatized_word
-
-    def transform(self, corpus, combined_strings=False, return_length=False, verbose=False):
-        '''
-        Processes entire corpus in accordance with defined when instantiating object
-        :param corpus: DataFrame, list, or array of strings (docs)
-        :param combined_strings: If False, return sentences split into words in a list.  If true, returns complete
-            sentences as strings
-        :param return_length: True to return length of largest doc with processed text
-        :param verbose: True to get updated on progress of transformation
-        :return:
-        '''
-        try:
-            corpus = corpus.tolist()
-        except:
-            corpus = corpus
-
-        if verbose:
-            import tqdm
-            if not combined_strings:
-                max_length = 0
-                combined = []
-                for x in tqdm.tqdm(corpus):
-                    if len(self.filter(x))>max_length:
-                        max_length=len(self.filter(x))
-                    combined.append(self.filter(x))
-                if return_length:
-                    return combined, max_length
-                else:
-                    return combined
-            else:
-                max_length = 0
-                combined = []
-                for x in tqdm.tqdm(corpus):
-                    if len(self.filter(x)) > max_length:
-                        max_length = len(self.filter(x))
-                    combined.append(' '.join(self.filter(x)))
-                if return_length:
-                    return combined, max_length
-                else:
-                    return combined
-        elif not combined_strings:
-            max_length = 0
-            combined = []
-            for x in corpus:
-                if len(self.filter(x)) > max_length:
-                    max_length = len(self.filter(x))
-                combined.append(self.filter(x))
-            if return_length:
-                return combined, max_length
-            else:
-                return combined
-        else:
-            max_length = 0
-            combined = []
-            for x in corpus:
-                if len(self.filter(x)) > max_length:
-                    max_length = len(self.filter(x))
-                combined.append(' '.join(self.filter(x)))
-            if return_length:
-                return combined, max_length
-            else:
-                return combined
-
-    def filter(self, input_string, return_list = True):
-        '''
-        Applies all defined rules to a given sentence
-        :param input_string: Sentence to process
-        :param return_list: If True, return as list of words.  If false, return as string
-        :return: Processed string
-        '''
-        from re import sub
-        new_list = []
-
-        if self.default_lem == 'spaCy':
-            spacy_string = self.spacy(input_string)
-            input_string = [x.lemma_ for x in spacy_string]
-
-        if type(input_string) == str:
-            input_string = input_string.lower()
-            for key in self.contractions:
-                input_string = input_string.replace(key, self.contractions[key])
-            for key in self.substitutions:
-                input_string = input_string.replace(key, self.substitutions[key])
-            input_string = sub('[' + self.punctuation + ']', '', input_string)
-            pro_text = input_string.split()
-
-        elif type(input_string) == list:
-            pro_text = []
-            for s in input_string:
-                s = s.lower()
-                if '-' in self.punctuation:
-                    s = s.replace('-', ' ')
-                elif '/' in self.punctuation:
-                    s = s.replace('/', ' ')
-                for key in self.contractions:
-                    s = s.replace(key, self.contractions[key])
-                for key in self.substitutions:
-                    s = s.replace(key, self.substitutions[key])
-                s = sub('[' + self.punctuation + ']', '', s)
-                for i in s.split():
-                    i=i.replace(' ', '')
-                    if i:
-                        pro_text.append(i)
-
-        for u in pro_text:
-            if (not (u in self.stopwords)) and (not self.lemmatize(u).isspace()) and (self.lemmatize(u)):
-                new_list.append(self.lemmatize(u))
-
-        if return_list:
-            return new_list
-        else:
-            return ' '.join(new_list)
-
-    def save(self, corpus, name, labels=None, file_dir="./", encoding="utf-8", verbose=False):
-        try:
-            labels=labels.tolist()
-        except:
-            labels=labels
-        save_file = file_dir+name+'.wvt'
-        corpus, max_length = self.transform(corpus, combined_strings=True, return_length=True, verbose=verbose)
-        corpus_size = len(corpus)
-        file = open(save_file, 'w', encoding=encoding)
-        if type(labels) is not None:
-            file.write(name+' Y '+str(max_length)+" "+str(corpus_size)+"\n")
-        else:
-            file.write(name+' N '+str(max_length)+" "+str(corpus_size)+"\n")
-        for index in range(len(corpus)):
-            if type(labels) is not None:
-                file.write((str(labels[index])+' '+corpus[index]+"\n"))
-            else:
-                file.write(corpus[index]+"\n")
-        file.close()
-
 class FastVectokenizer:
-
+    '''
+    A class for generating integer sequences of tokenized corpus as well as a corresponding dictionary of pretrained
+    word embeddings.  This makes it very easy to go from unprocessed corpus to embedding layer of a deep neural net
+    through a TextProcessor -> FastVectokenizer pipeline with pretrained word embeddings.
+    '''
     def __init__(self, corpus, max_words=None, max_sentence_length=None, tokenize_unknown=False):
         '''
         :param corpus: The text input to be processed.  Can be either a TextProcessor object, list of sentences as lists,
@@ -437,6 +218,12 @@ class VectorDictionary:
             return self.oov_vector
 
     def query(self, word_list):
+        '''
+        Looks up multiple words and returns their embeddings at a time
+
+        :param word_list: Single word or list of words
+        :return: an array of dimensions (number of words, dimensions of vector)
+        '''
         if type(word_list) == str:
             return self.__query(word_list)
         else:
@@ -448,11 +235,11 @@ class VectorDictionary:
             return embedding
 
 class VectorEmbedder:
-
+    '''
+    Converts a corpus (dataframe or list of docs--which are themselves lists of words) into vector embedded form.
+    The fit function will take a corpus and return sequence embeddings using pretrained word embeddings.
+    '''
     def __init__(self):
-        """
-        Converts a corpus (dataframe or list of docs--which are themselves lists of words) into vector embedded form
-        """
 
     def __format(self, corpus):
         import numpy as np
@@ -520,7 +307,7 @@ class VectorEmbedder:
                 embedding[doc_index] = self.__embed_doc(corpus[doc_index], vectors, max_length, pad_first)
 
         if save_file:
-            np.save(save_file+'.wve', embedding)
+            np.savez_compressed(save_file+'.wve', embedding)
 
         return embedding
 
@@ -528,11 +315,278 @@ class VectorEmbedder:
         import numpy as np
         if file_dir[-4:]!='.wve':
             file_dir+='.wve'
-        return np.load(file_dir+'.npy')
+        loaded = np.load(file_dir+'.npz')
+        return loaded['arr_0']
+
+class TextProcessor:
+    '''
+    Custom text processor to take a corpus and output processed text.  Pretty standard text processor with nothing
+    new or different.  The main reason it exists is to make it quick and simple to go from unstructured to semi-structured
+    word data.  Can save processed text to the drive in a library specific format that allows it to be used to pull
+    processed text in chunks from the drive to save memory.
+    '''
+    def __init__(self, lemmatizer='nltk', stopwords='default', punctuation='default', contractions='default',
+                 substitutions='default'):
+        '''
+        :param corpus:  list of sentences to process
+        :param lemmatizer:  Function to lemmatize words.  If None, no lemmatizer used.  If 'nltk', uses nltk WordNetLemmatizer.
+            if 'spaCy en', uses the spaCy English lemmatizer.  If anything else, treats as function mapping a word to it's
+            lemmatized form.
+        :param stopwords: a simple set of words to remove
+        :param punctuation: a set of punctuation to remove
+        :param contractions: a dictionary of contractions to make.  Example is {"can't": "can not", "n't": not, ...}
+        :param substitution:   similar to contractions but for grouping words together.  Example {'i': 'me', 'my': 'me', etc.}
+        '''
+        # Below basically initializes all of the above hyperparameter options
+
+        # This class has two hard coded lemmatizer options but any lemmatizer can be wrapped in a function
+        # and used as input as well.  'nltk' is a position-independent lemmatizer and 'spaCy en' lemmatizes
+        # based on POS tags
+        if lemmatizer == 'nltk':
+            from nltk import WordNetLemmatizer
+            self.lemmatizer = WordNetLemmatizer()
+            self.default_lem = 'nltk'
+            from nltk.corpus import wordnet
+            self.wordnet = wordnet
+        elif lemmatizer == 'spaCy en':
+            import spacy
+            self.spacy = spacy.load('en', disable=['parser', 'ner'])
+            self.lemmatizer = self.identity
+            self.default_lem = 'spaCy'
+        elif not lemmatizer:
+            self.default_lem = False
+            self.lemmatizer = self.identity
+        else:
+            self.default_lem = False
+            self.lemmatizer = lemmatizer
+
+        if substitutions == 'default':
+            self.substitutions = {}
+        else:
+            self.substitutions = substitutions
+
+        if stopwords == 'default':
+            self.stopwords = {'ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about',
+                              'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be',
+                              'some', 'for', 'do', 'its', 'your', 'such', 'into', 'of', 'most', 'itself',
+                              'other', 'off', 'is', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the',
+                              'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through',
+                              'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our',
+                              'their', 'while', 'above', 'both', 'up', 'to', 'had', 'she',
+                              'when', 'at', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will',
+                              'on', 'does', 'yourselve', 'then', 'that', 'because', 'what', 'over', 'why', 'so',
+                              'can', 'did', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where',
+                              'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 'being',
+                              'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was',
+                              'here', 'than', 'pron'}
+        elif stopwords == 'none':
+            self.stopwords = {}
+        else:
+            self.stopwords = stopwords
+
+        if contractions == 'default':
+            self.contractions = {"can't": "can not", "won't": "will not", "n't": " not",
+                                 "'ve": " have", "'m": " am", "'s": "", "'d": " had", '-': ' '}
+        elif contractions == 'none':
+            self.contracts = {}
+        else:
+            self.contractions = contractions
+
+        if punctuation == 'default':
+            self.punctuation = '“”!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+        elif punctuation == 'none':
+            self.punctuation = ''
+        else:
+            self.punctuation = punctuation
+
+    def identity(self, word):
+        '''
+        Pretty self-explanatory
+        '''
+        return word
+
+    def lemmatize(self, word):
+        '''
+        Lemmatizes a word based on the given lemmatizer
+        :param word: Word to lemmatize
+        :return: Lemmatized word
+        '''
+        if self.default_lem == 'nltk':
+            POS = [self.wordnet.ADJ, self.wordnet.VERB, self.wordnet.NOUN, self.wordnet.ADV]
+            im_just_guessing_here = [self.lemmatizer.lemmatize(word, x) for x in POS]
+
+            lemmatized_word = max(set(im_just_guessing_here),
+                                  key=im_just_guessing_here.count)
+        else:
+            lemmatized_word = self.lemmatizer(word)
+
+        return lemmatized_word
+
+    def transform(self, corpus, combined_strings=False, return_length=False, verbose=False):
+        '''
+        Takes a corpus of docs and transforms them according to the hyperparameters of the class
+
+        :param corpus: DataFrame, list, or array of strings (docs)
+        :param combined_strings: If False, return sentences split into words in a list.  If true, returns complete
+            sentences as strings
+        :param return_length: True to return length of largest doc with processed text
+        :param verbose: True to get updated on progress of transformation
+        :return: transformed corpus
+        '''
+        try:
+            corpus = corpus.tolist()
+        except:
+            corpus = corpus
+        # the entire function basically iterates over the corpus and applies the self.filter function
+        # to each doc
+        if verbose:
+            import tqdm
+            if not combined_strings:
+                max_length = 0
+                combined = []
+                for x in tqdm.tqdm(corpus):
+                    if len(self.filter(x)) > max_length:
+                        max_length = len(self.filter(x))
+                    combined.append(self.filter(x))
+                if return_length:
+                    return combined, max_length
+                else:
+                    return combined
+            else:
+                max_length = 0
+                combined = []
+                for x in tqdm.tqdm(corpus):
+                    if len(self.filter(x)) > max_length:
+                        max_length = len(self.filter(x))
+                    combined.append(' '.join(self.filter(x)))
+                if return_length:
+                    return combined, max_length
+                else:
+                    return combined
+        elif not combined_strings:
+            max_length = 0
+            combined = []
+            for x in corpus:
+                if len(self.filter(x)) > max_length:
+                    max_length = len(self.filter(x))
+                combined.append(self.filter(x))
+            if return_length:
+                return combined, max_length
+            else:
+                return combined
+        else:
+            max_length = 0
+            combined = []
+            for x in corpus:
+                if len(self.filter(x)) > max_length:
+                    max_length = len(self.filter(x))
+                combined.append(' '.join(self.filter(x)))
+            if return_length:
+                return combined, max_length
+            else:
+                return combined
+
+    def filter(self, input_string, return_list=True):
+        '''
+        Applies all defined rules to a single doc
+
+        :param input_string: Sentence to process
+        :param return_list: If True, return as list of words.  If false, return as string
+        :return: Processed string
+        '''
+        from re import sub
+        new_list = []
+
+        # if 'spaCy en' is the lemmatizer, split and lemmatize the sentence
+        if self.default_lem == 'spaCy':
+            spacy_string = self.spacy(input_string)
+            input_string = [x.lemma_ for x in spacy_string]
+
+        # lowercase all letters and make all necessary word and punctuation substitutions and split
+        # contractions up
+        if type(input_string) == str:
+            input_string = input_string.lower()
+            input_string = input_string.replace('-',
+                                                ' ')  # split hyphenated and slashed words up prior to substitutions
+            input_string = input_string.replace('/', ' ')
+            for key in self.contractions:
+                input_string = input_string.replace(key, self.contractions[key])
+            for key in self.substitutions:
+                input_string = input_string.replace(key, self.substitutions[key])
+            input_string = sub('[' + self.punctuation + ']', '', input_string)
+            pro_text = input_string.split()
+        elif type(input_string) == list:
+            pro_text = []
+            for s in input_string:
+                s = s.lower()
+                if '-' in self.punctuation:
+                    s = s.replace('-', ' ')
+                elif '/' in self.punctuation:
+                    s = s.replace('/', ' ')
+                for key in self.contractions:
+                    s = s.replace(key, self.contractions[key])
+                for key in self.substitutions:
+                    s = s.replace(key, self.substitutions[key])
+                s = sub('[' + self.punctuation + ']', '', s)
+                for i in s.split():
+                    i = i.replace(' ', '')
+                    if i:
+                        pro_text.append(i)
+
+        for u in pro_text:  # filter out stopwords and lemmatize
+            if (not (u in self.stopwords)) and (not self.lemmatize(u).isspace()) and (self.lemmatize(u)):
+                new_list.append(self.lemmatize(u))
+
+        if return_list:  # return list
+            return new_list
+        else:  # if not return list, join list and return strings
+            return ' '.join(new_list)
+
+    def save(self, corpus, name, labels=None, file_dir="./", encoding="utf-8", verbose=False):
+        '''
+        Saves the processed corpus as a specific format for reading processed corpus in other classes in wordvecpy.
+        Essentially makes it easier to save extremely large files and load them in chunks to keep memory usage down.
+
+        :param corpus: corpus to save
+        :param name: name to save as
+        :param labels: labels of text--if None, only save processed corpus
+        :param file_dir: directory to save file
+        :param encoding: encoding of saved file
+        :param verbose: True to return updates on saving progress
+        :return: returns the processed corpus and the length of the longest doc in the corpus
+        '''
+        try:
+            labels = labels.tolist()
+        except:
+            labels = labels
+        save_file = file_dir + name + '.wvt'
+        corpus, max_length = self.transform(corpus, combined_strings=True, return_length=True, verbose=verbose)
+        corpus_size = len(corpus)
+        file = open(save_file, 'w', encoding=encoding)
+        if type(labels) is not None:
+            file.write(name + ' Y ' + str(max_length) + " " + str(corpus_size) + "\n")
+        else:
+            file.write(name + ' N ' + str(max_length) + " " + str(corpus_size) + "\n")
+        for index in range(len(corpus)):
+            if type(labels) is not None:
+                file.write((str(labels[index]) + ' ' + corpus[index] + "\n"))
+            else:
+                file.write(corpus[index] + "\n")
+        file.close()
+        return corpus, max_length
 
 class ImportCorpus:
-
+    '''
+    Reads a corpus saved with TextProcessor class from drive.  Can read in chunks to preserve memory.
+    '''
     def __init__(self, input_file, encoding="utf-8"):
+        '''
+        This is a short and sweet class that only has one interactable function.  It's single function ('pull')
+        reads a block of docs from the saved corpus
+
+        :param input_file: Input file
+        :param encoding: encoding of input file
+        '''
         self.input_file = input_file
         if self.input_file[-4:]!='.wvt':
             self.input_file+='.wvt'
@@ -540,6 +594,9 @@ class ImportCorpus:
         self.name, self.has_labels, self.max_length, self.corpus_size = self.__read_header()
 
     def __read_header(self):
+        '''
+        :return: returns corpus metadata
+        '''
         file = open(self.input_file, 'r', encoding=self.encoding)
         header = file.readline().split()
         file.close()
@@ -549,7 +606,16 @@ class ImportCorpus:
             has_labels=False
         return header[0], has_labels, int(header[2]), int(header[3])
 
-    def pull(self, min_row=None, max_row=None, include_labels=True, convert_labels=True):
+    def pull(self, min_row=None, max_row=None, include_labels=False, convert_labels=True):
+        '''
+        The main functionality of this class.  Returns a range of docs from a saved corpus.
+
+        :param min_row: starting row of docs to pull.  If None, start from beginning
+        :param max_row: max row of docs to pull.  If None, pulls until the end
+        :param include_labels: return associated labels for each doc
+        :param convert_labels: if labels are numeric, converts from string to float
+        :return: returns a list of docs with labels if specified
+        '''
         if not max_row and not min_row:
             min_row=0
             max_row=self.corpus_size
@@ -577,6 +643,13 @@ class ImportCorpus:
             return corpus_chunk
 
     def __quick_read(self, line, labels=False, convert_labels=True):
+        '''
+
+        :param line: row of document to read
+        :param labels: return labels or not
+        :param convert_labels: convert numeric labels to float
+        :return: returns the single doc and it's label if specified
+        '''
         line=line.split()
         if labels:
             if convert_labels:
@@ -598,7 +671,17 @@ class ImportCorpus:
 class Chunkifier:
 
     def __init__(self, cycle=True, preprocess_directory=None, pad_first=False):
+        '''
+        Class which splits a text corpus into chunks and generates embeddings for each chunk.  Mainly to get around memory issues,
+        since vector embeddings for a single document can be very large, and vector embeddings for a corpus of documents
+        may not fit into memory at once.
 
+        :param cycle: If True, indices greater than the total number of chunks will be wrapped around modulo the number of chunks.
+            If False, trying to use an index greater than total number of chunks will return None.
+        :param preprocess_directory: Directory to save preprocessed embeddings to.  Needed if you plan on preprocessing embeddings.
+            If generating embeddings in real-time, no directory needed
+        :param pad_first: True to pad zeros at front of embeddings, False to pad them at end.
+        '''
         self.cycle=cycle
         self.file_dir = preprocess_directory
         if (self.file_dir) and (self.file_dir[-1] != '/'):
@@ -664,6 +747,20 @@ class Chunkifier:
         return data
 
     def load(self, corpus, vectors, chunk_size, labels=None, name=None, convert_labels=True, max_length=None, preload=False):
+        '''
+        Used to load raw corpus into class.
+
+        :param corpus: Text data to process
+        :param vectors: vectors to use for embeddings
+        :param chunk_size: How many documents to include in a single chunk
+        :param labels: Labels for each document.  If loading with LoadCorpus object, labels are automatically detected and loaded
+            if they exist
+        :param name: the name of the corpus.  This is important for preprocessing and saving preprocessed embeddings
+        :param convert_labels: If True, convert string labels of integers into integers
+        :param max_length: max allowable size of documents.  If None, selects size of largest document.
+        :param preload: Only works with LoadCorpus corpus documents.  If True, loads entire corpus into memory.  If false, only
+            loads chunks as they are used
+        '''
         import numpy as np
         self.__initialize_variables()
         self.vectors = vectors
@@ -716,7 +813,7 @@ class Chunkifier:
         corpus_size = len(corpus)
         return corpus, corpus_size, max_possible_length
 
-    def __load_wvp(self, corpus, preload, convert_labels=True):
+    def __load_wvp(self, corpus, preload=False, convert_labels=True):
         if preload:
             self.local = True
             if corpus.has_labels:
@@ -768,9 +865,9 @@ class Chunkifier:
         else:
             return embedder.fit(chunk, self.vectors, max_length=self.max_length, pad_first=self.pad_first, save_file=save_dir, verbose=verbose)
 
-    def preprocess_all(self, return_labels=True, verbose=False):
-        self.set_current_chunk(0)
-        for index in range(self.num_chunks):
+    def preprocess_all(self, start_chunk=0, return_labels=True, verbose=False):
+        self.set_current_chunk(start_chunk)
+        for index in range(self.num_chunks-start_chunk):
             self.fit_chunk(index, return_labels=return_labels, save=True, verbose=verbose)
 
     def precomputed_available(self, name=None):
@@ -780,10 +877,10 @@ class Chunkifier:
         '''
         from os import listdir
         all_files = [f for f in listdir(self.file_dir)]
-        wvl_files = list(filter(lambda x: x[-8:] == '.wve.npy', all_files))
+        wvl_files = list(filter(lambda x: x[-8:] == '.wvl.npy', all_files))
         wvl_files = [x[:-8] for x in wvl_files]
         wvl_files = list(filter(lambda x: len(x.split('___'))!=len(x.split(' ')), wvl_files))
-        wve_files = list(filter(lambda x: x[-8:] == '.wvl.npy', all_files))
+        wve_files = list(filter(lambda x: x[-8:] == '.wve.npz', all_files))
         wve_files = [x[:-8] for x in wve_files]
         wve_files = list(filter(lambda x: len(x.split('___'))!=len(x.split(' ')), wve_files))
         wve_files = [(x.split('___')[0], int(x.split('___')[1])) for x in wve_files]
@@ -807,8 +904,9 @@ class Chunkifier:
         if return_labels:
             matching = self.matching_precomputed_available(wve_dir, wvl_dir)
         try:
-            embedding_file = self.file_dir+name+'___'+str(chunk_index)+'.wve.npy'
+            embedding_file = self.file_dir+name+'___'+str(chunk_index)+'.wve.npz'
             embedding = np.load(embedding_file)
+            embedding = embedding['arr_0']
             if (name, chunk_index) in matching:
                 try:
                     label_file = self.file_dir+name+'___'+str(chunk_index)+'.wvl.npy'
@@ -835,7 +933,13 @@ class Chunkifier:
         return self.current_index
 
 class Vectokenizer:
-
+    #
+    #
+    #  Completely outmatched by FastVectokenizer which does the same thing.  Planning on recoding this entire class.
+    #  Only use if you do not have Keras installed in your environment.  Does the same thing as FastVectokenizer at
+    #  at this time.
+    #
+    #
     def __init__(self, corpus, vector_dict, test_corpus = None, max_words = None, max_sentence_length = None, tokenize_unknown = False, name  = None, verbose = False):
         '''
         :param corpus: The text input to be processed.  Can be either a TextProcessor object, list of sentences as lists,
@@ -1083,4 +1187,3 @@ class Vectokenizer:
             transformed_corpus[line] = self.str_to_int_tokens(self.test_corpus[line], self.longest_sentence, pad_first = pad_first)
 
         return transformed_corpus
-
