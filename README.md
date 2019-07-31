@@ -28,11 +28,13 @@ Some use cases can be found in the various python notebooks in my exploration of
 
 ## Future Plans
 
-Currently working on functionality to reduce the size of integer embeddings by clustering words based on their vector representations.  This will hopefully allow smaller vector dictionaries to be used while maintaining good functionality.
+Working on functionality to reduce the number of words in sequence by clustering words based on their vector representations.  This will hopefully allow smaller vector dictionaries to be used while maintaining decent functionality.
 
 Also working on functionality to build multi-channel (or concatenated, your choice) embeddings by combining multiple embedding frameworks together.
 
-Currently, it is possible to use word vector embeddings with PyTorch by converting all documents to embeddings with **VectorEmbedder**.  There is a better, more organic way to work with PyTorch than this and I plan on implementing it once I'm satisfied with the overall functionality of the package.  Currently, only Keras (and TF with it) are directly supported as it was the easiest library to get the package functioning and out the door quickest.
+Currently, it is possible to use word vector embeddings with PyTorch by converting all documents to embeddings with **VectorEmbedder**.  There is a better, more organic way to work with PyTorch than this and I plan on implementing it once I'm satisfied with the overall functionality of the package.  Currently, only Keras (and TF with it) are directly supported as it is the easiest to get working and out the door.
+
+This package was created to give me experience with creating a custom library and distributing it with PyPi, so any feedback (positive or negative) would be greatly appreciated.
 
 **Vectokenizer** currently has a memory intensive ad-hoc design (which is why **FastVectokenizer** is currently much better).  I will be reworking it so that it is in-line with **FastVectokenizer**'s speed while providing the additional capability of clustering words by vector to reduce dictionary size mentioned above.
 
