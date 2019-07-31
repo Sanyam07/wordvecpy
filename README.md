@@ -10,6 +10,8 @@
 
 **VectorEmbedder** is where the magic happens and a text corpus (or chunk of a text corpus) is embedded with word vectors.  This can be done with both static vector dictionaries like Stanford's various GLoVe embeddings or with dynamic embeddings that are context dependent like Google's ELMO embeddings.
 
+This package was created to give me experience with creating a custom library and distributing it with PyPi, so any feedback (positive or negative) would be greatly appreciated.
+
 ## Current Version is 1.0
 
 The current version 1.0 is significantly different from the previous version.  Multiple classes from the previous version were removed and redesigned or recombined with new classes in a more organic manner.  I've done significant testing on this version to make sure everything works properly but it's obviously very time consuming to test every possible combination of interactions.  If you come across a use case where wordvecpy fails, *please please please* let me know.
@@ -33,8 +35,6 @@ Working on functionality to reduce the number of words in sequence by clustering
 Also working on functionality to build multi-channel (or concatenated, your choice) embeddings by combining multiple embedding frameworks together.
 
 Currently, it is possible to use word vector embeddings with PyTorch by converting all documents to embeddings with **VectorEmbedder**.  There is a better, more organic way to work with PyTorch than this and I plan on implementing it once I'm satisfied with the overall functionality of the package.  Currently, only Keras (and TF with it) are directly supported as it is the easiest to get working and out the door.
-
-This package was created to give me experience with creating a custom library and distributing it with PyPi, so any feedback (positive or negative) would be greatly appreciated.
 
 **Vectokenizer** currently has a memory intensive ad-hoc design (which is why **FastVectokenizer** is currently much better).  I will be reworking it so that it is in-line with **FastVectokenizer**'s speed while providing the additional capability of clustering words by vector to reduce dictionary size mentioned above.
 
