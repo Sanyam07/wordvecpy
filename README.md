@@ -14,7 +14,7 @@ This package was created to give me experience with creating a custom library an
 
 ## Current Version is 1.0
 
-The current version 1.0 is significantly different from the previous version.  Multiple classes from the previous version were removed and redesigned or recombined with new classes in a more organic manner.  I've done significant testing on this version to make sure everything works properly but it's obviously very time consuming to test every possible combination of interactions.  If you come across a use case where wordvecpy fails, *please please please* let me know.
+This was a very early attempt at implementing a Python package and distributing it on PyPi.  It was originally a collection of classes that I was using locally to work a few problems and I decided to publish it to make it easier to import on Google Colab and give myself practice at publishing a working package. The code is messy and I plan on redoing it at some point when I get the time.  I had done significant testing on these classes with a local script but without using the Python unittest modules. During the process of rebuilding the classes, I will be converting the test script into proper unit tests for each class.  Despite this, I *have* done some pretty extensive testing on the package but it is difficult--if not impossible--to test every combination of functionalities.  If you come across a use case where wordvecpy fails, *please please please* let me know.
 
 ## Installation
 
